@@ -31,6 +31,7 @@ create table if not exists public.lists (
   user_id uuid not null references auth.users on delete cascade,
   name text not null,
   description text,
+  is_public boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -44,6 +45,13 @@ create table if not exists public.list_games (
   position integer not null default 0,
   created_at timestamptz not null default now()
 );
+
+-- Add is_public column if it doesn't exist (for existing projects)
+do $$ begin
+  if not exists (select 1 from information_schema.columns where table_name = 'lists' and column_name = 'is_public') then
+    alter table public.lists add column is_public boolean not null default false;
+  end if;
+end $$;
 
 -- Enable Row Level Security
 alter table public.profiles enable row level security;

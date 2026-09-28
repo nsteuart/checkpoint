@@ -11,6 +11,7 @@ export default function Lists() {
       const { data: listsData } = await supabase
         .from('lists')
         .select('*, profiles(username)')
+        .eq('is_public', true)
         .order('created_at', { ascending: false })
         .limit(50)
 
@@ -56,8 +57,8 @@ export default function Lists() {
         </div>
       ) : lists.length === 0 ? (
         <div className="text-center py-20 text-gray-500">
-          <p className="text-lg">No lists yet</p>
-          <p className="text-sm mt-1">Be the first to create one!</p>
+          <p className="text-lg">No public lists yet</p>
+          <p className="text-sm mt-1">Create a list and publish it to share with the community!</p>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
