@@ -1,5 +1,6 @@
 -- Checkpoint database schema for Supabase
 -- Run this in: Supabase Dashboard → SQL Editor → New query → paste → Run
+-- This script is safe to run multiple times (idempotent)
 
 -- Profiles table (extends auth.users)
 create table if not exists public.profiles (
@@ -51,53 +52,68 @@ alter table public.lists enable row level security;
 alter table public.list_games enable row level security;
 
 -- Profiles policies
+drop policy if exists "Profiles are viewable by everyone" on public.profiles;
 create policy "Profiles are viewable by everyone"
   on public.profiles for select using (true);
 
+drop policy if exists "Users can insert their own profile" on public.profiles;
 create policy "Users can insert their own profile"
   on public.profiles for insert with check (auth.uid() = id);
 
+drop policy if exists "Users can update their own profile" on public.profiles;
 create policy "Users can update their own profile"
   on public.profiles for update using (auth.uid() = id);
 
 -- User games policies
+drop policy if exists "Users can view their own games" on public.user_games;
 create policy "Users can view their own games"
   on public.user_games for select using (auth.uid() = user_id);
 
+drop policy if exists "User games are viewable by everyone" on public.user_games;
 create policy "User games are viewable by everyone"
   on public.user_games for select using (true);
 
+drop policy if exists "Users can insert their own games" on public.user_games;
 create policy "Users can insert their own games"
   on public.user_games for insert with check (auth.uid() = user_id);
 
+drop policy if exists "Users can update their own games" on public.user_games;
 create policy "Users can update their own games"
   on public.user_games for update using (auth.uid() = user_id);
 
+drop policy if exists "Users can delete their own games" on public.user_games;
 create policy "Users can delete their own games"
   on public.user_games for delete using (auth.uid() = user_id);
 
 -- Lists policies
+drop policy if exists "Lists are viewable by everyone" on public.lists;
 create policy "Lists are viewable by everyone"
   on public.lists for select using (true);
 
+drop policy if exists "Users can insert their own lists" on public.lists;
 create policy "Users can insert their own lists"
   on public.lists for insert with check (auth.uid() = user_id);
 
+drop policy if exists "Users can update their own lists" on public.lists;
 create policy "Users can update their own lists"
   on public.lists for update using (auth.uid() = user_id);
 
+drop policy if exists "Users can delete their own lists" on public.lists;
 create policy "Users can delete their own lists"
   on public.lists for delete using (auth.uid() = user_id);
 
 -- List games policies
+drop policy if exists "List games are viewable by everyone" on public.list_games;
 create policy "List games are viewable by everyone"
   on public.list_games for select using (true);
 
+drop policy if exists "Users can insert their own list games" on public.list_games;
 create policy "Users can insert their own list games"
   on public.list_games for insert with check (
     auth.uid() in (select user_id from public.lists where id = list_id)
   );
 
+drop policy if exists "Users can delete their own list games" on public.list_games;
 create policy "Users can delete their own list games"
   on public.list_games for delete using (
     auth.uid() in (select user_id from public.lists where id = list_id)
@@ -116,6 +132,7 @@ begin
 end;
 $$;
 
-create or replace trigger on_auth_user_created
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
