@@ -15,6 +15,8 @@ export default function ListDetail() {
   useEffect(() => {
     async function fetchList() {
       setError('')
+      setLoading(true)
+
       const { data: listData, error: listError } = await supabase
         .from('lists')
         .select('*, profiles(username)')
@@ -22,7 +24,7 @@ export default function ListDetail() {
         .single()
 
       if (listError) {
-        setError('List not found')
+        setError(listError.message || 'List not found')
         setLoading(false)
         return
       }
@@ -64,8 +66,8 @@ export default function ListDetail() {
 
   if (error || !list) {
     return (
-      <div className="text-center py-20 text-gray-400">
-        <p className="text-lg">List not found</p>
+      <div className="text-center py-20">
+        <p className="text-lg text-red-400">{error || 'List not found'}</p>
         <Link to="/lists" className="text-accent hover:underline text-sm mt-2 inline-block">
           Back to Lists
         </Link>
