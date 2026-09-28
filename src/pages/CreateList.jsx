@@ -20,19 +20,24 @@ export default function CreateList() {
     setLoading(true)
     setError('')
 
-    const { data, error } = await supabase
+    const { data, error: insertError } = await supabase
       .from('lists')
       .insert({ user_id: user.id, name: name.trim(), description: description.trim() || null })
       .select()
       .single()
 
-    if (error) {
-      setError(error.message)
+    if (insertError) {
+      setError(insertError.message)
       setLoading(false)
       return
     }
 
-    navigate(`/list/${data.id}`)
+    if (data?.id) {
+      navigate(`/list/${data.id}`)
+    } else {
+      setError('List created but could not redirect. Check your profile.')
+      setLoading(false)
+    }
   }
 
   return (
