@@ -57,6 +57,8 @@ Checkpoint is a Letterboxd-style web app for video games. Browse a catalog of ga
 
 **Live URL:** [https://lovely-cucurucho-698691.netlify.app](https://lovely-cucurucho-698691.netlify.app)
 
+**Demo Video:** [https://youtu.be/9dvCtcKwTq8](https://youtu.be/9dvCtcKwTq8)
+
 1. Push your code to GitHub
 2. Go to [Netlify](https://netlify.com) → Add new site → Import from Git
 3. Select your repo, set build command to `npm run build` and publish directory to `dist`
