@@ -20,7 +20,10 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    if (!user) return
+    if (!user) {
+      setUserGames([])
+      return
+    }
     supabase
       .from('user_games')
       .select('*')
@@ -47,13 +50,11 @@ export default function Home() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      {/* Hero */}
       <div className="mb-8">
         <h1 className="text-3xl md:text-4xl font-bold mb-2">Discover Games</h1>
         <p className="text-gray-400">Find your next adventure, track what you've played, rate your favorites.</p>
       </div>
 
-      {/* Search + Filter */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -79,7 +80,6 @@ export default function Home() {
         </select>
       </div>
 
-      {/* Genre chips */}
       <div className="flex flex-wrap gap-2 mb-6">
         <button
           onClick={() => setGenre('')}

@@ -1,61 +1,89 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import GameGrid from '../components/GameGrid'
 import ListCard from '../components/ListCard'
 
-export default function Profile() {
-  const { user, profile } = useAuth()
+export default function PublicProfile() {
+  const { username } = useParams()
+  const [profile, setProfile] = useState(null)
   const [userGames, setUserGames] = useState([])
   const [lists, setLists] = useState([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('played')
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!user) return
-    supabase
-      .from('user_games')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('updated_at', { ascending: false })
-      .then(({ data }) => {
-        setUserGames(data || [])
+    async function fetchProfile() {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('username', username)
+        .single()
+
+      if (!profileData) {
+        setError('User not found')
         setLoading(false)
-      })
-  }, [user])
+        return
+      }
 
-  useEffect(() => {
-    if (!user) return
-    supabase
-      .from('lists')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        if (data) {
-          Promise.all(
-            data.map(async (list) => {
-              const { count } = await supabase
-                .from('list_games')
-                .select('*', { count: 'exact', head: true })
-                .eq('list_id', list.id)
-              const { data: games } = await supabase
-                .from('list_games')
-                .select('game_thumbnail')
-                .eq('list_id', list.id)
-                .order('position', { ascending: true })
-                .limit(4)
-              return {
-                ...list,
-                gameCount: count || 0,
-                previewImages: (games || []).map((g) => g.game_thumbnail).filter(Boolean),
-              }
-            })
-          ).then(setLists)
-        }
-      })
-  }, [user])
+      setProfile(profileData)
+
+      const { data: gamesData } = await supabase
+        .from('user_games')
+        .select('*')
+        .eq('user_id', profileData.id)
+        .order('updated_at', { ascending: false })
+
+      setUserGames(gamesData || [])
+
+      const { data: listsData } = await supabase
+        .from('lists')
+        .select('*')
+        .eq('user_id', profileData.id)
+        .order('created_at', { ascending: false })
+
+      if (listsData) {
+        const listsWithCounts = await Promise.all(
+          listsData.map(async (list) => {
+            const { count } = await supabase
+              .from('list_games')
+              .select('*', { count: 'exact', head: true })
+              .eq('list_id', list.id)
+
+            const { data: games } = await supabase
+              .from('list_games')
+              .select('game_thumbnail')
+              .eq('list_id', list.id)
+              .order('position', { ascending: true })
+              .limit(4)
+
+            return {
+              ...list,
+              gameCount: count || 0,
+              previewImages: (games || []).map((g) => g.game_thumbnail).filter(Boolean),
+            }
+          })
+        )
+        setLists(listsWithCounts)
+      }
+
+      setLoading(false)
+    }
+    fetchProfile()
+  }, [username])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-accent" />
+      </div>
+    )
+  }
+
+  if (error || !profile) {
+    return <div className="text-center py-20 text-gray-400">User not found.</div>
+  }
 
   const played = userGames.filter((g) => g.status === 'played')
   const wantToPlay = userGames.filter((g) => g.status === 'want_to_play')
@@ -72,26 +100,20 @@ export default function Profile() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center text-accent text-2xl font-bold">
-            {profile?.username?.[0]?.toUpperCase() || '?'}
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">{profile?.username || 'Loading…'}</h1>
-            <p className="text-sm text-gray-400">
-              Member since {new Date(user?.created_at).toLocaleDateString()}
-            </p>
-          </div>
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center text-accent text-2xl font-bold">
+          {profile.username[0].toUpperCase()}
         </div>
-        <Link
-          to="/create-list"
-          className="px-4 py-2 rounded-lg bg-accent text-black text-sm font-semibold hover:bg-accent-dark transition-colors"
-        >
-          + New List
-        </Link>
+        <div>
+          <h1 className="text-2xl font-bold">{profile.username}</h1>
+          <p className="text-sm text-gray-400">
+            Member since {new Date(profile.created_at).toLocaleDateString()}
+          </p>
+        </div>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         <div className="bg-surface-light border border-surface-border rounded-xl p-4 text-center">
           <p className="text-2xl font-bold text-accent">{played.length}</p>
@@ -107,6 +129,7 @@ export default function Profile() {
         </div>
       </div>
 
+      {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-surface-light rounded-xl p-1 border border-surface-border w-fit">
         {[
           { key: 'played', label: `Played (${played.length})` },
@@ -128,12 +151,7 @@ export default function Profile() {
 
       {tab === 'lists' ? (
         lists.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500 mb-3">No lists yet</p>
-            <Link to="/create-list" className="text-accent hover:underline text-sm">
-              Create your first list
-            </Link>
-          </div>
+          <p className="text-gray-500 text-center py-12">No lists yet.</p>
         ) : (
           <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {lists.map((list) => (
@@ -155,7 +173,6 @@ export default function Profile() {
             genre: ug.game_genre,
           }))}
           userGames={currentGames}
-          loading={loading}
         />
       )}
     </div>

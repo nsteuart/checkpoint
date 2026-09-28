@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getGameDetails } from '../lib/gamesApi'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import StarRating from '../components/StarRating'
+import AddToListButton from '../components/AddToListButton'
 
 export default function GameDetail() {
   const { id } = useParams()
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [game, setGame] = useState(null)
   const [userGame, setUserGame] = useState(null)
+  const [communityRatings, setCommunityRatings] = useState([])
+  const [communityReviews, setCommunityReviews] = useState([])
   const [loading, setLoading] = useState(true)
   const [review, setReview] = useState('')
   const [saving, setSaving] = useState(false)
@@ -36,8 +40,29 @@ export default function GameDetail() {
       })
   }, [user, id])
 
+  useEffect(() => {
+    supabase
+      .from('user_games')
+      .select('rating, profiles(username)')
+      .eq('game_id', Number(id))
+      .gt('rating', 0)
+      .then(({ data }) => setCommunityRatings(data || []))
+
+    supabase
+      .from('user_games')
+      .select('review, rating, profiles(username)')
+      .eq('game_id', Number(id))
+      .not('review', 'is', null)
+      .neq('review', '')
+      .limit(10)
+      .then(({ data }) => setCommunityReviews(data || []))
+  }, [id])
+
   async function saveGame(status, rating) {
-    if (!user) return
+    if (!user) {
+      navigate('/login')
+      return
+    }
     setSaving(true)
     const { error } = await supabase
       .from('user_games')
@@ -60,12 +85,20 @@ export default function GameDetail() {
   }
 
   async function handleRate(rating) {
+    if (!user) {
+      navigate('/login')
+      return
+    }
     const status = userGame?.status || 'played'
     await saveGame(status, rating)
     setUserGame((prev) => ({ ...prev, rating }))
   }
 
   async function handleStatus(status) {
+    if (!user) {
+      navigate('/login')
+      return
+    }
     if (userGame?.status === status) return
     await saveGame(status, userGame?.rating || 0)
     setUserGame((prev) => ({ ...prev, status }))
@@ -95,10 +128,13 @@ export default function GameDetail() {
   }
 
   const screenshots = game.screenshots?.slice(0, 4) || []
+  const avgCommunityRating =
+    communityRatings.length > 0
+      ? (communityRatings.reduce((s, r) => s + r.rating, 0) / communityRatings.length).toFixed(1)
+      : null
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      {/* Banner */}
       <div className="relative rounded-2xl overflow-hidden mb-6 h-64 md:h-80">
         <img src={game.thumbnail} alt={game.title} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/40 to-transparent" />
@@ -109,9 +145,7 @@ export default function GameDetail() {
       </div>
 
       <div className="grid md:grid-cols-[1fr_280px] gap-8">
-        {/* Main content */}
         <div>
-          {/* Actions */}
           <div className="flex flex-wrap items-center gap-3 mb-6">
             <div className="flex items-center gap-2 bg-surface-light border border-surface-border rounded-xl px-4 py-2">
               <span className="text-sm text-gray-400">Your Rating:</span>
@@ -137,6 +171,7 @@ export default function GameDetail() {
             >
               {userGame?.status === 'want_to_play' ? '✓ Want to Play' : 'Want to Play'}
             </button>
+            <AddToListButton game={game} />
             {userGame && (
               <button
                 onClick={handleRemove}
@@ -153,13 +188,11 @@ export default function GameDetail() {
             </div>
           )}
 
-          {/* Description */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold mb-2">About</h2>
             <p className="text-gray-400 leading-relaxed text-sm">{game.description}</p>
           </div>
 
-          {/* Screenshots */}
           {screenshots.length > 0 && (
             <div className="mb-6">
               <h2 className="text-lg font-semibold mb-3">Screenshots</h2>
@@ -176,29 +209,69 @@ export default function GameDetail() {
             </div>
           )}
 
+          {/* Community Reviews */}
+          {communityReviews.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold mb-3">Community Reviews</h2>
+              <div className="space-y-3">
+                {communityReviews.map((rev, i) => (
+                  <div key={i} className="bg-surface-light border border-surface-border rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Link
+                        to={`/user/${rev.profiles?.username}`}
+                        className="text-sm font-medium text-accent hover:underline"
+                      >
+                        {rev.profiles?.username || 'Anonymous'}
+                      </Link>
+                      {rev.rating > 0 && (
+                        <span className="flex items-center gap-1 text-xs text-star">
+                          <svg viewBox="0 0 24 24" className="w-3 h-3 fill-star" stroke="currentColor" strokeWidth="1">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                          </svg>
+                          {rev.rating}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-300">{rev.review}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Review */}
           <div>
             <h2 className="text-lg font-semibold mb-2">Your Review</h2>
             <textarea
               value={review}
               onChange={(e) => setReview(e.target.value)}
-              placeholder="Write your thoughts…"
+              placeholder={user ? "Write your thoughts…" : "Sign in to write a review"}
               rows={4}
               className="w-full px-4 py-3 rounded-xl bg-surface-light border border-surface-border text-white placeholder-gray-500 focus:outline-none focus:border-accent resize-none transition-colors"
             />
             <button
               onClick={() => saveGame(userGame?.status || 'played', userGame?.rating || 0)}
-              disabled={saving}
+              disabled={saving || !user}
               className="mt-2 px-4 py-2 rounded-lg bg-accent text-black text-sm font-semibold hover:bg-accent-dark disabled:opacity-50 transition-colors"
             >
-              {saving ? 'Saving…' : 'Save Review'}
+              {saving ? 'Saving…' : user ? 'Save Review' : 'Sign in to Save'}
             </button>
           </div>
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-4">
           <div className="bg-surface-light border border-surface-border rounded-xl p-4 space-y-3">
+            {avgCommunityRating && (
+              <div>
+                <span className="text-xs text-gray-500 uppercase tracking-wider">Community Rating</span>
+                <p className="text-sm text-gray-200 flex items-center gap-1">
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-star text-star" stroke="currentColor" strokeWidth="1">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
+                  {avgCommunityRating} / 5 ({communityRatings.length} ratings)
+                </p>
+              </div>
+            )}
             <div>
               <span className="text-xs text-gray-500 uppercase tracking-wider">Release Date</span>
               <p className="text-sm text-gray-200">{game.release_date}</p>

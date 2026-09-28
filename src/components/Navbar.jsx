@@ -23,11 +23,14 @@ export default function Navbar() {
         </Link>
 
         <div className="flex items-center gap-3">
+          <Link to="/" className="text-sm text-gray-400 hover:text-white transition-colors">
+            Discover
+          </Link>
+          <Link to="/lists" className="text-sm text-gray-400 hover:text-white transition-colors">
+            Lists
+          </Link>
           {user ? (
             <>
-              <Link to="/" className="text-sm text-gray-400 hover:text-white transition-colors">
-                Discover
-              </Link>
               <Link to="/profile" className="text-sm text-gray-400 hover:text-white transition-colors">
                 {profile?.username || 'Profile'}
               </Link>

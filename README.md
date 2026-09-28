@@ -2,7 +2,7 @@
 
 **Track your games. Rate your journey.**
 
-Checkpoint is a Letterboxd-style web app for video games. Create an account, browse a catalog of games, rate them on a 1–5 star scale, mark them as *Played* or *Want to Play*, and write reviews — all saved to your profile.
+Checkpoint is a Letterboxd-style web app for video games. Browse a catalog of games, rate them on a 1–5 star scale, mark them as *Played* or *Want to Play*, write reviews, and create curated lists — all saved to your profile.
 
 ## Tech Stack
 
@@ -16,25 +16,28 @@ Checkpoint is a Letterboxd-style web app for video games. Create an account, bro
 
 ## Features
 
-- User registration, login, and logout
-- Browse and search a catalog of ~400 games
-- Game detail pages with screenshots and descriptions
-- Rate games (1–5 stars, half-star precision)
-- Mark games as **Played** or **Want to Play**
-- Write and save reviews
-- Personal profile with stats and game lists
+- **Public browsing** — browse games, view community ratings and reviews without an account
+- **User accounts** — register, login, and logout
+- **Game catalog** — search and filter ~400 games by genre
+- **Game detail pages** — screenshots, descriptions, community ratings and reviews
+- **Rate games** — 1–5 stars with half-star precision
+- **Track your games** — mark as *Played* or *Want to Play*
+- **Write reviews** — share your thoughts on any game
+- **Create lists** — curate lists like "Best RPGs of 2024" and share them
+- **Public profiles** — view other users' ratings, reviews, and lists
 
 ## Local Setup
 
 1. **Clone the repo**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/checkpoint.git
+   git clone https://github.com/nsteuart/checkpoint.git
    cd checkpoint
    ```
 
 2. **Create a Supabase project**
    - Go to [supabase.com](https://supabase.com) and create a free project
    - In the SQL Editor, run the contents of `supabase/schema.sql`
+   - Then run the contents of `supabase/add-lists.sql`
    - Copy your **Project URL** and **anon public key** from Project Settings → API
 
 3. **Configure environment variables**
@@ -55,7 +58,9 @@ Checkpoint is a Letterboxd-style web app for video games. Create an account, bro
 1. Push your code to GitHub
 2. Go to [Netlify](https://netlify.com) → Add new site → Import from Git
 3. Select your repo, set build command to `npm run build` and publish directory to `dist`
-4. Add your Supabase env vars in Site settings → Environment variables
+4. Add your Supabase env vars in Site settings → Environment variables:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
 5. Deploy!
 
 ## Project Structure
@@ -65,7 +70,8 @@ checkpoint/
 ├── index.html
 ├── netlify.toml
 ├── supabase/
-│   └── schema.sql          # Database setup
+│   ├── schema.sql           # Initial database setup
+│   └── add-lists.sql        # Lists feature migration
 ├── public/
 │   ├── _redirects
 │   └── favicon.svg
@@ -84,13 +90,19 @@ checkpoint/
     │   ├── GameCard.jsx
     │   ├── GameGrid.jsx
     │   ├── StarRating.jsx
+    │   ├── ListCard.jsx
+    │   ├── AddToListButton.jsx
     │   └── ProtectedRoute.jsx
     └── pages/
         ├── Login.jsx
         ├── Register.jsx
         ├── Home.jsx
         ├── GameDetail.jsx
-        └── Profile.jsx
+        ├── Profile.jsx
+        ├── PublicProfile.jsx
+        ├── Lists.jsx
+        ├── ListDetail.jsx
+        └── CreateList.jsx
 ```
 
 ## Game Data
