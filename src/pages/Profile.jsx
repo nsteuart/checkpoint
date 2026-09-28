@@ -127,25 +127,33 @@ export default function Profile() {
       </div>
 
       {tab === 'lists' ? (
-        lists.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500 mb-3">No lists yet</p>
-            <Link to="/create-list" className="text-accent hover:underline text-sm">
-              Create your first list
+        <>
+          <div className="flex justify-end mb-4">
+            <Link
+              to="/create-list"
+              className="px-4 py-2 rounded-lg bg-accent text-black text-sm font-semibold hover:bg-accent-dark transition-colors"
+            >
+              + Create New List
             </Link>
           </div>
-        ) : (
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {lists.map((list) => (
-              <ListCard
-                key={list.id}
-                list={list}
-                gameCount={list.gameCount}
-                previewImages={list.previewImages}
-              />
-            ))}
-          </div>
-        )
+          {lists.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500 mb-3">No lists yet</p>
+              <p className="text-sm text-gray-600">Create a list, then add games to it from any game page</p>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {lists.map((list) => (
+                <ListCard
+                  key={list.id}
+                  list={list}
+                  gameCount={list.gameCount}
+                  previewImages={list.previewImages}
+                />
+              ))}
+            </div>
+          )}
+        </>
       ) : (
         <GameGrid
           games={currentGames.map((ug) => ({

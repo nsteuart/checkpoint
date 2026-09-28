@@ -9,6 +9,8 @@ export default function AddToListButton({ game }) {
   const [lists, setLists] = useState([])
   const [open, setOpen] = useState(false)
   const [adding, setAdding] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [newListName, setNewListName] = useState('')
   const ref = useRef(null)
 
   useEffect(() => {
@@ -47,6 +49,23 @@ export default function AddToListButton({ game }) {
     setOpen(false)
   }
 
+  async function handleCreateList(e) {
+    e.preventDefault()
+    if (!newListName.trim()) return
+    setCreating(true)
+    const { data, error } = await supabase
+      .from('lists')
+      .insert({ user_id: user.id, name: newListName.trim() })
+      .select()
+      .single()
+    setCreating(false)
+    if (!error && data) {
+      setLists((prev) => [data, ...prev])
+      setNewListName('')
+      setCreating(false)
+    }
+  }
+
   if (!user) {
     return (
       <button
@@ -67,19 +86,44 @@ export default function AddToListButton({ game }) {
         + Add to List
       </button>
       {open && (
-        <div className="absolute top-full mt-2 right-0 w-56 bg-surface-lighter border border-surface-border rounded-xl shadow-xl z-50 overflow-hidden">
+        <div className="absolute top-full mt-2 right-0 w-64 bg-surface-lighter border border-surface-border rounded-xl shadow-xl z-50 overflow-hidden">
           <div className="p-2 border-b border-surface-border">
             <p className="text-xs text-gray-400 font-medium">Add to list</p>
           </div>
+
+          {/* Create new list inline */}
+          <div className="p-2 border-b border-surface-border">
+            {creating ? (
+              <form onSubmit={handleCreateList} className="flex gap-1">
+                <input
+                  type="text"
+                  value={newListName}
+                  onChange={(e) => setNewListName(e.target.value)}
+                  placeholder="List name…"
+                  autoFocus
+                  className="flex-1 px-2 py-1.5 rounded-lg bg-surface border border-surface-border text-white text-xs placeholder-gray-500 focus:outline-none focus:border-accent"
+                />
+                <button
+                  type="submit"
+                  className="px-2 py-1.5 rounded-lg bg-accent text-black text-xs font-semibold"
+                >
+                  Create
+                </button>
+              </form>
+            ) : (
+              <button
+                onClick={() => setCreating(true)}
+                className="w-full text-left px-2 py-1.5 rounded-lg text-xs text-accent hover:bg-surface-border transition-colors"
+              >
+                + Create new list
+              </button>
+            )}
+          </div>
+
+          {/* Existing lists */}
           {lists.length === 0 ? (
             <div className="p-3">
-              <p className="text-xs text-gray-500 mb-2">No lists yet</p>
-              <button
-                onClick={() => navigate('/create-list')}
-                className="text-xs text-accent hover:underline"
-              >
-                Create your first list
-              </button>
+              <p className="text-xs text-gray-500">No lists yet — create one above</p>
             </div>
           ) : (
             <div className="max-h-48 overflow-y-auto">
