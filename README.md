@@ -4,6 +4,8 @@
 
 Checkpoint is a Letterboxd-style web app for video games. Browse a catalog of games, rate them on a 1–5 star scale, mark them as *Played* or *Want to Play*, write reviews, and create curated lists — all saved to your profile.
 
+**🚀 Live Demo:** [https://lovely-cucurucho-698691.netlify.app](https://lovely-cucurucho-698691.netlify.app) | **📺 Demo Video:** [https://youtu.be/9dvCtcKwTq8](https://youtu.be/9dvCtcKwTq8)
+
 ## Tech Stack
 
 | Layer | Technology |
